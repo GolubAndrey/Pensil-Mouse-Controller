@@ -14,6 +14,8 @@ void PensilDetector::DrawPensil(Mat frame)
 
 	findContours(frame, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
+	if (contours.size() == 0)
+		return;
 	Mat drawing = Mat::zeros(frame.size(), CV_8UC3);
 	char text[200] = "";
 	CvFont font = cvFont(2, 2);
@@ -28,7 +30,12 @@ void PensilDetector::DrawPensil(Mat frame)
 		putText(drawing, text, cvPoint(brect.x + 20, brect.y + 20), 1, 1, CV_RGB(0, 255, 0));
 		rectangle(drawing, brect, CV_RGB(0, 0, 255), 3);
 	}*/
-	drawContours(drawing, contours, FindBiggestContour(contours), CV_RGB(255, 0, 0), 2, 8, hierarchy, 0, Point());
+	int big = FindBiggestContour(contours);
+	double epsilon = 0.1*arcLength(contours[big], true);
+	approxPolyDP(contours[big],contours[big], epsilon, true);
+	drawContours(drawing, contours, big, CV_RGB(255, 0, 0), 2, 8, hierarchy, 0, Point());
+	//Rect brect = boundingRect(contours[big]);
+	//rectangle(drawing, brect, CV_RGB(0, 0, 255), 3);
 	imshow("Conturs",drawing);
 }
 

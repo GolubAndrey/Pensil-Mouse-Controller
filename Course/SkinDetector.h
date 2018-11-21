@@ -14,6 +14,8 @@ public:
 	void calibrateInPosition(Mat input,int position);
 	Mat getSkinMask(Mat input);
 
+	bool calibrate = false;
+
 private:
 	int hLowThreshold = 0;
 	int hHighThreshold = 0;
@@ -22,10 +24,11 @@ private:
 	int vLowThreshold = 0;
 	int vHighThreshold = 0;
 
-	bool calibrate = false;
+	
 	bool calibratedLeft = false;
 	bool calibratedMiddle = false;
 	bool calibratedRight = false;
+	bool allCalibrate[6];
 
 	Rect skinColorSamplerRectangle1, skinColorSamplerRectangle2;
 	Rect skinColorSamplerRectangles[6];
@@ -33,6 +36,7 @@ private:
 
 
 	void calibrating();
+	bool CheckAllCalibrates();
 	void calculateThresholds(Mat sample1, Mat sample2);
 	void SkinDetector::performOpening(Mat binaryImage, int structuralElementShapde, Point structuralElementSize);
 };

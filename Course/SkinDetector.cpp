@@ -11,9 +11,8 @@ SkinDetector::SkinDetector(void)
 	vLowThreshold = 0;
 	vHighThreshold = 0;
 
-	calibratedLeft = false;
-	calibratedRight = false;
-	calibratedLeft = false;
+	for (int i = 0; i < 6; i++)
+		allCalibrate[i] = false;
 	calibrate = false;
 	skinColorSamplerRectangle1, skinColorSamplerRectangle2;
 }
@@ -53,37 +52,29 @@ void SkinDetector::calibrateInPosition(Mat input, int position)
 	Mat hsvInput;
 	cvtColor(input, hsvInput, CV_BGR2HSV);
 
-	Mat sample1 = Mat(hsvInput, skinColorSamplerRectangles[position*2]);
-	Mat sample2 = Mat(hsvInput, skinColorSamplerRectangles[position*2+1]);
+	Mat sample1 = Mat(hsvInput, skinColorSamplerRectangles[position]);
 
-	skinRectanglesAverageValues[position * 2] = mean(sample1);
-	skinRectanglesAverageValues[position * 2 + 1] = mean(sample2);
+	skinRectanglesAverageValues[position] = mean(sample1);
 
-	switch (position)
+	if (position >= 0 && position < 6)
 	{
-	case 0:
-	{
-		calibratedLeft = true;
-		break;
-	}
-	case 1:
-	{
-		calibratedMiddle = true;
-		break;
-	}
-	case 2:
-	{
-		calibratedRight = true;
-		break;
-	}
-	default:
-		break;
+		allCalibrate[position] = true;
 	}
 
-	if (calibratedLeft && calibratedMiddle && calibratedRight)
+	if (calibrate = CheckAllCalibrates())
 	{
 		calibrating();
 	}
+}
+
+bool SkinDetector::CheckAllCalibrates()
+{
+	for (int i = 0; i < 6; i++)
+	{
+		if (!allCalibrate[i])
+			return false;
+	}
+	return true;
 }
 
 //template <typename...Args>
