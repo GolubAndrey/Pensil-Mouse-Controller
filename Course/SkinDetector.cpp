@@ -14,22 +14,20 @@ SkinDetector::SkinDetector(void)
 	for (int i = 0; i < 6; i++)
 		allCalibrate[i] = false;
 	calibrate = false;
-	skinColorSamplerRectangle1, skinColorSamplerRectangle2;
 }
 
-void SkinDetector::drawSkinColorSampler(Mat input) 
+void SkinDetector::drawSkinColorSampler(cv::Mat input)
 {
 	int frameWidth = input.size().width, frameHeight = input.size().height;
 
-	int rectangleSize = 5;
-	Scalar rectangleColor = Scalar(255, 0 , 255);
-	//5
-	skinColorSamplerRectangles[0] = Rect(frameWidth / 13, frameHeight / 1.3, rectangleSize, rectangleSize);
-	skinColorSamplerRectangles[1] = Rect(frameWidth / 13, frameHeight / 4, rectangleSize, rectangleSize);
-	skinColorSamplerRectangles[2] = Rect(frameWidth / 2, frameHeight / 1.3, rectangleSize, rectangleSize);
-	skinColorSamplerRectangles[3] = Rect(frameWidth / 2, frameHeight / 4, rectangleSize, rectangleSize);
-	skinColorSamplerRectangles[4] = Rect(frameWidth / 1.05, frameHeight / 1.3, rectangleSize, rectangleSize);
-	skinColorSamplerRectangles[5] = Rect(frameWidth / 1.05, frameHeight / 4, rectangleSize, rectangleSize);
+	cv::Scalar rectangleColor = cv::Scalar(255, 0 , 255);
+
+	skinColorSamplerRectangles[0] = cv::Rect(frameWidth / 13, frameHeight / 1.3, rectangleSize, rectangleSize);
+	skinColorSamplerRectangles[1] = cv::Rect(frameWidth / 13, frameHeight / 4, rectangleSize, rectangleSize);
+	skinColorSamplerRectangles[2] = cv::Rect(frameWidth / 2, frameHeight / 1.3, rectangleSize, rectangleSize);
+	skinColorSamplerRectangles[3] = cv::Rect(frameWidth / 2, frameHeight / 4, rectangleSize, rectangleSize);
+	skinColorSamplerRectangles[4] = cv::Rect(frameWidth / 1.05, frameHeight / 1.3, rectangleSize, rectangleSize);
+	skinColorSamplerRectangles[5] = cv::Rect(frameWidth / 1.05, frameHeight / 4, rectangleSize, rectangleSize);
 
 	for (int i = 0; i < 6; i++)
 	{
@@ -47,12 +45,12 @@ void SkinDetector::drawSkinColorSampler(Mat input)
 	}
 }
 
-void SkinDetector::calibrateInPosition(Mat input, int position)
+void SkinDetector::calibrateInPosition(cv::Mat input, int position)
 {
-	Mat hsvInput;
-	cvtColor(input, hsvInput, CV_BGR2HSV);
+	cv::Mat hsvInput;
+	cv::cvtColor(input, hsvInput, CV_BGR2HSV);
 
-	Mat sample1 = Mat(hsvInput, skinColorSamplerRectangles[position]);
+	cv::Mat sample1 = cv::Mat(hsvInput, skinColorSamplerRectangles[position]);
 
 	skinRectanglesAverageValues[position] = mean(sample1);
 
@@ -78,7 +76,7 @@ bool SkinDetector::CheckAllCalibrates()
 }
 
 //template <typename...Args>
-int minimal(int count,...)
+int SkinDetector::minimal(int count,...)
 {
 	va_list valist;
 	int temp;
@@ -96,7 +94,7 @@ int minimal(int count,...)
 	return min;
 }
 
-int maximal(int count, ...)
+int SkinDetector::maximal(int count, ...)
 {
 	va_list arg;
 	int temp;
@@ -138,56 +136,38 @@ void SkinDetector::calibrating() {
 		(int)skinRectanglesAverageValues[4][2], (int)skinRectanglesAverageValues[5][2])+ highOffset;
 
 	calibrate = true;
-	//Mat hsvInput;
-	//cvtColor(input, hsvInput, CV_BGR2HSV);
-
-//	Mat sample1 = Mat(hsvInput, skinColorSamplerRectangle1);
-//	Mat sample2 = Mat(hsvInput, skinColorSamplerRectangle2);
-
-//	calculateThresholds(sample1, sample2);
-
-	//calibrated = true;
 }
 
+void SkinDetector::MorphOperations(cv::Mat &thresh)
+{
+	cv::Mat erodeElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+	cv::Mat dilateElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
 
+	cv::erode(thresh, thresh, erodeElement);
+	cv::erode(thresh, thresh, erodeElement);
 
-void SkinDetector::calculateThresholds(Mat sample1, Mat sample2) {
-	//int offsetLowThreshold = 70;
-	//int offsetHighThreshold = 20;
-
-	/*Scalar hsvMeansSample1 = mean(sample1);
-	Scalar hsvMeansSample2 = mean(sample2);
-
-	hLowThreshold = min(hsvMeansSample1[0], hsvMeansSample2[0]) - offsetLowThreshold;
-	hHighThreshold = max(hsvMeansSample1[0], hsvMeansSample2[0]) + offsetHighThreshold;
-
-	sLowThreshold = min(hsvMeansSample1[1], hsvMeansSample2[1]) - offsetLowThreshold;
-	sHighThreshold = max(hsvMeansSample1[1], hsvMeansSample2[1]) + offsetHighThreshold;
-
-	// the V channel shouldn't be used. By ignorint it, shadows on the hand wouldn't interfire with segmentation.
-	// Unfortunately there's a bug somewhere and not using the V channel causes some problem. This shouldn't be too hard to fix.
-	vLowThreshold = min(hsvMeansSample1[2], hsvMeansSample2[2]) - offsetLowThreshold;
-	vHighThreshold = max(hsvMeansSample1[2], hsvMeansSample2[2]) + offsetHighThreshold;*/
-	//vLowThreshold = 0;
-	//vHighThreshold = 255;
+	cv::dilate(thresh, thresh, dilateElement);
+	cv::dilate(thresh, thresh, dilateElement);
 }
 
-Mat SkinDetector::getSkinMask(Mat input) {
-	Mat skinMask;
+cv::Mat SkinDetector::getSkinMask(cv::Mat input) {
+	cv::Mat skinMask;
 
 	if (!calibrate) {
-		skinMask = Mat::zeros(input.size(), CV_8UC1);
+		skinMask = cv::Mat::zeros(input.size(), CV_8UC1);
 		return skinMask;
 	}
 
-	Mat hsvInput;
+	cv::Mat hsvInput;
 	cvtColor(input, hsvInput, CV_BGR2HSV);
 
 	inRange(
 		hsvInput,
-		Scalar(hLowThreshold, sLowThreshold, vLowThreshold),
-		Scalar(hHighThreshold, sHighThreshold, vHighThreshold),
+		cv::Scalar(hLowThreshold, sLowThreshold, vLowThreshold),
+		cv::Scalar(hHighThreshold, sHighThreshold, vHighThreshold),
 		skinMask);
+
+	MorphOperations(skinMask);
 
 	//performOpening(skinMask, MORPH_ELLIPSE, { 3, 3 });
 	//dilate(skinMask, skinMask, Mat(), Point(-1, -1), 3);
@@ -195,7 +175,8 @@ Mat SkinDetector::getSkinMask(Mat input) {
 	return skinMask;
 }
 
-void SkinDetector::performOpening(Mat binaryImage, int kernelShape, Point kernelSize) {
-	Mat structuringElement = getStructuringElement(kernelShape, kernelSize);
-	morphologyEx(binaryImage, binaryImage, MORPH_OPEN, structuringElement);
+
+void SkinDetector::performOpening(cv::Mat binaryImage, int kernelShape, cv::Point kernelSize) {
+	cv::Mat structuringElement = cv::getStructuringElement(kernelShape, kernelSize);
+	cv::morphologyEx(binaryImage, binaryImage, cv::MORPH_OPEN, structuringElement);
 }

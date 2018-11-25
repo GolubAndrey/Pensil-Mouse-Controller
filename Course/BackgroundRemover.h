@@ -3,19 +3,18 @@
 #include<opencv\cv.h>
 
 
-using namespace cv;
 using namespace std;
 
 class BackgroundRemover {
 public:
 	bool calibrated = false;
 	BackgroundRemover(void);
-	void calibrate(Mat input);
-	Mat BackgroundRemover::getForeground(Mat input);
+	void calibrate(cv::Mat input);
+	cv::Mat BackgroundRemover::getForeground(cv::Mat input);
 
 private:
-	Mat background;
+	cv::Mat background;
 
-	Mat getForegroundMask(Mat input);
-	void BackgroundRemover::removeBackground(Mat input, Mat background);
+	cv::Mat getForegroundMask(cv::Mat input);
+	void BackgroundRemover::removeBackground(cv::Mat input, cv::Mat background);
 };

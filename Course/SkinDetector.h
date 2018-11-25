@@ -2,17 +2,16 @@
 
 #include<opencv\cv.h>
 
-
-using namespace cv;
 using namespace std;
 
-class SkinDetector {
+class SkinDetector 
+{
 public:
 	SkinDetector(void);
 
-	void drawSkinColorSampler(Mat input);
-	void calibrateInPosition(Mat input,int position);
-	Mat getSkinMask(Mat input);
+	void drawSkinColorSampler(cv::Mat input);
+	void calibrateInPosition(cv::Mat input,int position);
+	cv::Mat getSkinMask(cv::Mat input);
 
 	bool calibrate = false;
 
@@ -24,19 +23,19 @@ private:
 	int vLowThreshold = 0;
 	int vHighThreshold = 0;
 
-	
-	bool calibratedLeft = false;
-	bool calibratedMiddle = false;
-	bool calibratedRight = false;
+	const int rectangleSize = 5;
+
+
 	bool allCalibrate[6];
 
-	Rect skinColorSamplerRectangle1, skinColorSamplerRectangle2;
-	Rect skinColorSamplerRectangles[6];
-	Scalar skinRectanglesAverageValues[6];
+	cv::Rect skinColorSamplerRectangles[6];
+	cv::Scalar skinRectanglesAverageValues[6];
 
 
 	void calibrating();
 	bool CheckAllCalibrates();
-	void calculateThresholds(Mat sample1, Mat sample2);
-	void SkinDetector::performOpening(Mat binaryImage, int structuralElementShapde, Point structuralElementSize);
+	void MorphOperations(cv::Mat &threshold);
+	void SkinDetector::performOpening(cv::Mat binaryImage, int structuralElementShapde, cv::Point structuralElementSize);
+	int minimal(int count, ...);
+	int maximal(int count, ...);
 };

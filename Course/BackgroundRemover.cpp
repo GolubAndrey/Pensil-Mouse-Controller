@@ -2,32 +2,37 @@
 #include"opencv2\opencv.hpp"
 
 
-BackgroundRemover::BackgroundRemover(void) {
+
+BackgroundRemover::BackgroundRemover(void) 
+{
 	background;
 	calibrated = false;
 }
 
-void BackgroundRemover::calibrate(Mat input) {
+void BackgroundRemover::calibrate(cv::Mat input) 
+{
 	cvtColor(input, background, CV_BGR2GRAY);
 	calibrated = true;
 }
 
-Mat BackgroundRemover::getForeground(Mat input) {
-	Mat foregroundMask = getForegroundMask(input);
+cv::Mat BackgroundRemover::getForeground(cv::Mat input) 
+{
+	cv::Mat foregroundMask = getForegroundMask(input);
 
 	imshow("foregroundMask", foregroundMask);
 
-	Mat foreground;
+	cv::Mat foreground;
 	input.copyTo(foreground, foregroundMask);
 
 	return foreground;
 }
 
-Mat BackgroundRemover::getForegroundMask(Mat input) {
-	Mat foregroundMask;
+cv::Mat BackgroundRemover::getForegroundMask(cv::Mat input) 
+{
+	cv::Mat foregroundMask;
 
 	if (!calibrated) {
-		foregroundMask = Mat::zeros(input.size(), CV_8UC1);
+		foregroundMask = cv::Mat::zeros(input.size(), CV_8UC1);
 		return foregroundMask;
 	}
 
@@ -38,7 +43,8 @@ Mat BackgroundRemover::getForegroundMask(Mat input) {
 	return foregroundMask;
 }
 
-void BackgroundRemover::removeBackground(Mat input, Mat background) {
+void BackgroundRemover::removeBackground(cv::Mat input, cv::Mat background) 
+{
 	int thresholdOffset = 20;
 
 	for (int i = 0; i < input.rows; i++) {
