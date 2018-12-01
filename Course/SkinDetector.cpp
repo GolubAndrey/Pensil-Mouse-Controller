@@ -114,49 +114,47 @@ int SkinDetector::maximal(int count, ...)
 
 void SkinDetector::calibrating() {
 
-	int lowOffset = 15;
+	int lowOffset = 20;
 	int highOffset = 15;
 	hLowThreshold = minimal(6, (int)skinRectanglesAverageValues[0][0], (int)skinRectanglesAverageValues[1][0],
 		(int)skinRectanglesAverageValues[2][0], (int)skinRectanglesAverageValues[3][0],
-		(int)skinRectanglesAverageValues[4][0], (int)skinRectanglesAverageValues[5][0])- lowOffset;
+		(int)skinRectanglesAverageValues[4][0], (int)skinRectanglesAverageValues[5][0])-lowOffset*2;
+	if (hLowThreshold < 0)
+		hLowThreshold = 0;
 	hHighThreshold = maximal(6, (int)skinRectanglesAverageValues[0][0], (int)skinRectanglesAverageValues[1][0],
 		(int)skinRectanglesAverageValues[2][0], (int)skinRectanglesAverageValues[3][0],
-		(int)skinRectanglesAverageValues[4][0], (int)skinRectanglesAverageValues[5][0])+ highOffset;
+		(int)skinRectanglesAverageValues[4][0], (int)skinRectanglesAverageValues[5][0]);
 	sLowThreshold = minimal(6, (int)skinRectanglesAverageValues[0][1], (int)skinRectanglesAverageValues[1][1],
 		(int)skinRectanglesAverageValues[2][1], (int)skinRectanglesAverageValues[3][1],
-		(int)skinRectanglesAverageValues[4][1], (int)skinRectanglesAverageValues[5][1])- lowOffset;
-	sHighThreshold = maximal(6, (int)skinRectanglesAverageValues[0][1], (int)skinRectanglesAverageValues[1][1],
+		(int)skinRectanglesAverageValues[4][1], (int)skinRectanglesAverageValues[5][1])-2*lowOffset;
+	/*sHighThreshold = maximal(6, (int)skinRectanglesAverageValues[0][1], (int)skinRectanglesAverageValues[1][1],
 		(int)skinRectanglesAverageValues[2][1], (int)skinRectanglesAverageValues[3][1],
-		(int)skinRectanglesAverageValues[4][1], (int)skinRectanglesAverageValues[5][1])+ highOffset;
+		(int)skinRectanglesAverageValues[4][1], (int)skinRectanglesAverageValues[5][1])+ highOffset;*/
+	sHighThreshold = 255;
 	vLowThreshold = minimal(6, (int)skinRectanglesAverageValues[0][2], (int)skinRectanglesAverageValues[1][2],
 		(int)skinRectanglesAverageValues[2][2], (int)skinRectanglesAverageValues[3][2],
-		(int)skinRectanglesAverageValues[4][2], (int)skinRectanglesAverageValues[5][2])- lowOffset;
+		(int)skinRectanglesAverageValues[4][2], (int)skinRectanglesAverageValues[5][2])-lowOffset;
 	vHighThreshold = maximal(6, (int)skinRectanglesAverageValues[0][2], (int)skinRectanglesAverageValues[1][2],
 		(int)skinRectanglesAverageValues[2][2], (int)skinRectanglesAverageValues[3][2],
 		(int)skinRectanglesAverageValues[4][2], (int)skinRectanglesAverageValues[5][2])+ highOffset;
+	vHighThreshold = 255;
 
 	calibrate = true;
 }
 
 void SkinDetector::MorphOperations(cv::Mat &thresh)
 {
-	cv::Mat erodeElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-	cv::Mat dilateElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	cv::Mat erodeElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	cv::Mat dilateElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(8, 8));
 
 	cv::erode(thresh, thresh, erodeElement);
-	cv::erode(thresh, thresh, erodeElement);
-
 	cv::dilate(thresh, thresh, dilateElement);
+	cv::erode(thresh, thresh, erodeElement);
 	cv::dilate(thresh, thresh, dilateElement);
 }
 
-cv::Mat SkinDetector::getSkinMask(cv::Mat input) {
+cv::Mat SkinDetector::getSkinMask(cv::Mat input,int hLowThreshold, int sLowThreshold, int vLowThreshold, int hHighThreshold, int sHighThreshold, int vHighThreshold) {
 	cv::Mat skinMask;
-
-	if (!calibrate) {
-		skinMask = cv::Mat::zeros(input.size(), CV_8UC1);
-		return skinMask;
-	}
 
 	cv::Mat hsvInput;
 	cvtColor(input, hsvInput, CV_BGR2HSV);
@@ -167,6 +165,9 @@ cv::Mat SkinDetector::getSkinMask(cv::Mat input) {
 		cv::Scalar(hHighThreshold, sHighThreshold, vHighThreshold),
 		skinMask);
 
+	//cv::GaussianBlur(skinMask, skinMask, cv::Size(3, 3), 0);
+	//cv::dilate(skinMask, skinMask, 0);
+	//cv::erode(skinMask, skinMask, 0);
 	MorphOperations(skinMask);
 
 	//performOpening(skinMask, MORPH_ELLIPSE, { 3, 3 });

@@ -45,7 +45,7 @@ cv::Mat BackgroundRemover::getForegroundMask(cv::Mat input)
 
 void BackgroundRemover::removeBackground(cv::Mat input, cv::Mat background) 
 {
-	int thresholdOffset = 20;
+	int thresholdOffset = 10;
 
 	for (int i = 0; i < input.rows; i++) {
 		for (int j = 0; j < input.cols; j++) {

@@ -11,7 +11,7 @@ public:
 
 	void drawSkinColorSampler(cv::Mat input);
 	void calibrateInPosition(cv::Mat input,int position);
-	cv::Mat getSkinMask(cv::Mat input);
+	cv::Mat getSkinMask(cv::Mat input, int hLowThreshold, int sLowThreshold, int vLowThreshold, int hHighThreshold, int sHighThreshold, int vHighThreshold);
 
 	bool calibrate = false;
 
