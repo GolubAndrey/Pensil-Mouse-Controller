@@ -144,8 +144,8 @@ void SkinDetector::calibrating() {
 
 void SkinDetector::MorphOperations(cv::Mat &thresh)
 {
-	cv::Mat erodeElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
-	cv::Mat dilateElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(8, 8));
+	cv::Mat erodeElement = cv::getStructuringElement(cv::MORPH_RECT,cv::Size(5,5));
+	cv::Mat dilateElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(8,8));
 
 	cv::erode(thresh, thresh, erodeElement);
 	cv::dilate(thresh, thresh, dilateElement);

@@ -25,13 +25,15 @@ cv::Point PensilDetector::GetBottomPoint(vector<cv::Point> points)
 
 void PensilDetector::DrawRotateRect(cv::Mat frame, cv::RotatedRect rRect)
 {
+	cv::Mat mat = cv::Mat::zeros(frame.size(), CV_8UC3);
 	cv::Point2f vertices[4];
 	rRect.points(vertices);
 	for (int i = 0; i < 4; i++)
-		line(frame, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 255, 0), 2);
+		line(mat, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 255, 0), 2);
+	cv::imshow("as", mat);
 }
 
-cv::Point PensilDetector::DrawPensil(cv::Mat frame)
+void PensilDetector::DrawPensil(cv::Mat frame)
 {
 	vector<vector<cv::Point> > contours;
 	vector<cv::Vec4i> hierarchy;
@@ -39,7 +41,7 @@ cv::Point PensilDetector::DrawPensil(cv::Mat frame)
 	findContours(frame, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
 	if (contours.size() == 0)
-		return NULL;
+		return;
 	cv::Mat drawing = cv::Mat::zeros(frame.size(), CV_8UC3);
 	char text[200] = "";
 	CvFont font = cvFont(2, 2);
@@ -54,8 +56,11 @@ cv::Point PensilDetector::DrawPensil(cv::Mat frame)
 		bool flag = false;
 		for (int i = 0; i < offsets.size(); i++)
 		{
-			if (offsets[i].val[3]/256>10)
+			cv::Point tempPoint = cv::Point((contours[big][offsets[i].val[0]].x + contours[big][offsets[i].val[1]].x) / 2, (contours[big][offsets[i].val[0]].y + contours[big][offsets[i].val[1]].y) / 2);
+			int length = sqrt(pow(abs(tempPoint.x - contours[big][offsets[i].val[2]].x), 2) + pow(abs(tempPoint.y - contours[big][offsets[i].val[2]].y), 2));
+			if (length>50)
 			{
+				printf("%d\n", length);
 				flag = true;
 				break;
 			}
@@ -63,10 +68,9 @@ cv::Point PensilDetector::DrawPensil(cv::Mat frame)
 		if (!flag && cv::contourArea(contours[big])>500)
 		{
 			cv::polylines(drawing, contours[big], true, cv::Scalar(0, 0, 255), 2);
-			cv::Point bottomPoint = GetBottomPoint(contours[big]);
-			circle(drawing, bottomPoint, 5, CV_RGB(255, 0, 0), 2, 8, 0);
+			mousePosition = GetBottomPoint(contours[big]);
+			circle(drawing, mousePosition, 5, CV_RGB(255, 0, 0), 2, 8, 0);
 			imshow("Conturs", drawing);
-			return bottomPoint;
 		}
 	}
 	//cv::polylines(drawing, convex, true, cv::Scalar(0, 0, 255), 2);
@@ -77,33 +81,57 @@ cv::Point PensilDetector::DrawPensil(cv::Mat frame)
 
 	//cv::Rect brect = boundingRect(contours[big]);
 	cv::RotatedRect brect = minAreaRect(contours[big]);
-	//cv::RotatedRect brect = minAreaRect(newVector);
-	
-	cv::Point2f rectArray[4];
-	brect.points(rectArray);
-
-	
-	//vector<cv::Point2f> rectArray(4);
-//	int result = cv::matchShapes(contours[big], convex, 1, 0);
-	//printf("%d\n", result);
-	//DrawRotateRect(drawing, brect);
-	//int temp = cv::matchShapes(newVector, rectVector, 1, 0);
-	//cv::Moments mom1 = cv::moments(newVector, true);
-	//int size = cv::contourArea(contours[big]);
-	/*int size = cv::contourArea(newVector);
-	{
-		cv::Rect rect = cv::boundingRect(newVector);
-		drawContours(drawing, contours, big, CV_RGB(255, 0, 0), 2, 8, hierarchy, 0, cv::Point());
-		//sprintf(text, "S = %d", temp);
-		//putText(drawing, text, cvPoint(rect.x + 20, rect.y + 20), 1, 1, CV_RGB(0, 255, 0));
-		//rectangle(drawing, brect, CV_RGB(0, 0, 255), 3);
-		//Rect brect = boundingRect(contours[big]);
-		//rectangle(drawing, brect, CV_RGB(0, 0, 255), 3);
-		imshow("Conturs", drawing);
-		return bottomPoint;
-	}*/
+	CheckLeftAndRightClick(brect.angle);
 	imshow("Conturs", drawing);
-	return NULL;
+}
+
+void PensilDetector::CalculatePositionAndClicks(cv::Mat frame)
+{
+	vector<vector<cv::Point> > contours;
+	vector<cv::Vec4i> hierarchy;
+
+	findContours(frame, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+	if (contours.size() == 0)
+		return;
+
+	int big = FindBiggestContour(contours);
+	vector<int> convex;
+	cv::convexHull(cv::Mat(contours[big]), convex, false);
+	vector<cv::Vec4i> offsets;
+	cv::convexityDefects(cv::Mat(contours[big]), convex, offsets);
+	if (offsets.size() != 0)
+	{
+		bool flag = false;
+		for (int i = 0; i < offsets.size(); i++)
+		{
+			cv::Point tempPoint = cv::Point((contours[big][offsets[i].val[0]].x + contours[big][offsets[i].val[1]].x) / 2, (contours[big][offsets[i].val[0]].y + contours[big][offsets[i].val[1]].y) / 2);
+			
+			if (sqrt(pow(abs(tempPoint.x - contours[big][offsets[i].val[2]].x), 2) + pow(abs(tempPoint.y - contours[big][offsets[i].val[2]].y), 2))>50)
+			{
+				flag = true;
+				break;
+			}
+		}
+		double area = cv::contourArea(contours[big]);
+		//printf("%f\n", area);
+		if (!flag && area>500)
+		{
+			mousePosition = GetBottomPoint(contours[big]);
+			 
+			cv::RotatedRect brect = cv::fitEllipse(contours[big]);
+			double ang = brect.angle - 90;
+			brect = minAreaRect(contours[big]);
+			
+			DrawRotateRect(frame, brect);
+			
+			//if (brect.size.width > brect.size.height)
+			//	ang += 90;
+			CheckLeftAndRightClick(ang);
+			//
+			//printf("%f\n", brect.angle);
+		}
+	}
 }
 
 
@@ -158,26 +186,92 @@ int maximal(int count, ...)
 	return max;
 }
 
-vector<cv::Point> GetMiddleRectangle(vector<vector<cv::Point>> rectangles)
+void PensilDetector::CheckLeftAndRightClick(int angel)
 {
-	vector<cv::Point> result(4);
-	int sumX = 0;
-	int sumY = 0;
-	int i;
-	int j;
-	for (i = 0; i < rectangles.size(); i++)
+	//printf("%d\n", angel);
+	if (angel > 1 && angel<50)
 	{
-		sumX = 0;
-		sumY = 0;
-		for (j = 0; j < 4; j++)
+		if (leftClickFlag)
 		{
-			sumX += rectangles[i][j].x;
-			sumY += rectangles[i][j].y;
+			leftClickFlag = false;
 		}
-		result[i] = cv::Point(sumX / j, sumY / j);
+		if (timerRight)
+		{
+			rightClickFlag = false;
+		}
+		else
+		{
+			rightClickFlag = true;
+		}
+		if (timer == 0)
+		{
+			timerRight = true;
+		}
+		if (timerRight)
+		{
+			timer++;
+		}
+		if (timerRight > timerClick)
+		{
+			timer = 0;
+			timerRight = false;
+		}
 	}
-	return result;
+	else
+	{
+		if (angel > -50 && angel<-1)
+		{
+			if (rightClickFlag)
+			{
+				rightClickFlag = false;
+			}
+			if (timerLeft)
+			{
+				leftClickFlag = false;
+			}
+			else
+			{
+				leftClickFlag = true;
+			}
+			if (timer == 0)
+			{
+				timerLeft = true;
+			}
+			if (timerLeft)
+			{
+				timer++;
+			}
+			if (timerLeft > timerClick)
+			{
+				timer = 0;
+				timerLeft = false;
+			}
+		}
+		else
+		{
+				rightClickFlag = false;
+				timerRight = false;
+				timer = 0;
+				leftClickFlag = false;
+				timerLeft = false;
+				timer = 0;
+		}
+	}
 }
 
+bool PensilDetector::GetLeftClick()
+{
+	return leftClickFlag;
+}
+
+bool PensilDetector::GetRightClick()
+{
+	return rightClickFlag;
+}
+
+cv::Point PensilDetector::GetMousePosition()
+{
+	return mousePosition;
+}
 
 

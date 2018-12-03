@@ -111,6 +111,11 @@ int main(int argc, char** argv)
 	point.x = 0;
 	point.y = 0;
 
+	iLowH = 75;
+	iLowS = 113;
+	iLowV = 23;
+	iHighH = 125;
+
 	while (true)
 	{
 		videoCapture >> frame;
@@ -122,11 +127,17 @@ int main(int argc, char** argv)
 
 		frameOut = skinDetector.getSkinMask(frame, iLowH, iLowS, iLowV, iHighH, iHighS, iHighV);
 
+		
 		if (backgroundRemover.calibrated)
 		{
-			cv::Point point2 =pensilDetector.DrawPensil(frameOut);
+			//pensilDetector.DrawPensil(frameOut);
+			pensilDetector.CalculatePositionAndClicks(frameOut);
+			cv::Point point2 = pensilDetector.GetMousePosition();
 			if (!((point.x < point2.x + cursorOffsetRange) && (point.x > point2.x - cursorOffsetRange) && (point.y < point2.y + cursorOffsetRange) && (point.y > point2.y - cursorOffsetRange)))
-				point = point2; 
+			{
+				point.x = (point.x + point2.x) / 2;
+				point.y = (point.y + point2.y) / 2;
+			}
 			cv::Size size=frame.size();
 			if (cursorFlag)
 			{
@@ -141,11 +152,25 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					x = GetSystemMetrics(SM_CXSCREEN)*(point.x-100)/(size.width-200);
+					int temp = GetSystemMetrics(SM_CXSCREEN);
+					x = temp*(point.x-100)/(size.width-200);
 					y = GetSystemMetrics(SM_CYSCREEN)*(point.y-100) / (size.height-150);
 				}
 				SetCursorPos(x, y);
+				if (pensilDetector.GetLeftClick())
+				{
+					//mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
+					puts("Left click");
+				}
+
+				if (pensilDetector.GetRightClick())
+				{
+					//mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0);
+					puts("Right click");
+				}
 			}
+			
+			
 		}
 
 		imshow("Thresholded Image", frameOut); //show the thresholded image
