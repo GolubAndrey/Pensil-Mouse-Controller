@@ -126,13 +126,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BackgroundRemover.cpp" />
+    <ClCompile Include="FaceDetector.cpp" />
+    <ClCompile Include="FingerCount.cpp" />
+    <ClCompile Include="HandDetector.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PensilDetector.cpp" />
-    <ClCompile Include="ColorDetector.cpp" />
+    <ClCompile Include="SkinDetector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BackgroundRemover.h" />
+    <ClInclude Include="FaceDetector.h" />
+    <ClInclude Include="FingerCount.h" />
     <ClInclude Include="PensilDetector.h" />
-    <ClInclude Include="ColorDetector.h" />
+    <ClInclude Include="SkinDetector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\haarcascade_frontalface_alt.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

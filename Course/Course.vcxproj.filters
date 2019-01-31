@@ -15,22 +15,48 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="HandDetector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SkinDetector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FaceDetector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BackgroundRemover.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FingerCount.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PensilDetector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ColorDetector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SkinDetector.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FaceDetector.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BackgroundRemover.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FingerCount.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="PensilDetector.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ColorDetector.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\haarcascade_frontalface_alt.xml">
+      <Filter>Resource Files</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

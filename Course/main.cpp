@@ -6,7 +6,10 @@
 #include <opencv2/video.hpp>
 #include <Windows.h>
 
-#include "ColorDetector.h"
+#include "BackgroundRemover.h"
+#include "SkinDetector.h"
+#include "FaceDetector.h"
+#include "FingerCount.h"
 #include "PensilDetector.h"
 
 #pragma warning(disable:4996)
@@ -14,146 +17,183 @@
 using namespace cv;
 using namespace std;
 
+const int cursorOffsetRange = 3;
 
-bool cursorFlag = false;
-
-const int cursorOffsetRange = 5;
-
-
-int x;
-int y;
-bool clickFlag = false;
-
-
-
-int main(int argc, char** argv)
-{
+/*int main(int, char**) {
 	cv::VideoCapture videoCapture(1);
 	videoCapture.set(CV_CAP_PROP_SETTINGS, 1);
 
-	if (!videoCapture.isOpened()) 
-	{
+	if (!videoCapture.isOpened()) {
 		cout << "Can't find camera!" << endl;
 		return -1;
 	}
 
-	ColorDetector skinDetector;
+	cv::Mat frame, frameOut, handMask, foreground, fingerCountDebug;
+
+	BackgroundRemover backgroundRemover;
+	SkinDetector skinDetector;
+	FaceDetector faceDetector;
+	FingerCount fingerCount;
 	PensilDetector pensilDetector;
 
-	cv::Mat frame,pensilFrame,wheelUpFrame,wheelDownFrame;
+	while (true) {
+		videoCapture >> frame;
+		frameOut = frame.clone();
 
-	VideoCapture cap(1);
+		skinDetector.drawSkinColorSampler(frameOut);
 
-	if (!cap.isOpened())
+		foreground = backgroundRemover.getForeground(frame);
+		imshow("window", frameOut);
+		imshow("test", skinDetector.getSkinMask(foreground));
+		if (skinDetector.calibrate && backgroundRemover.calibrated)
+			pensilDetector.DrawPensil(skinDetector.getSkinMask(foreground));
+
+		int key = waitKey(1);
+
+		if (key == 27) // esc
+			break;
+		else if (key == 98) // b
+			backgroundRemover.calibrate(frame);
+		else if (key >= int('1') && key <= int('6'))
+			skinDetector.calibrateInPosition(frame, key - 49);
+	}
+
+	return 0;
+}*/
+
+int main(int argc, char** argv)
+{
+	bool cursorFlag = false;
+	cv::VideoCapture videoCapture(1);
+	videoCapture.set(CV_CAP_PROP_SETTINGS, 1);
+
+	if (!videoCapture.isOpened()) {
+		cout << "Can't find camera!" << endl;
+		return -1;
+	}
+
+	SkinDetector skinDetector;
+	BackgroundRemover backgroundRemover;
+	PensilDetector pensilDetector;
+
+	cv::Mat frame, frameOut, foreground;
+
+	VideoCapture cap(1); //capture the video from web cam
+
+	if (!cap.isOpened())  // if not success, exit program
 	{
 		cout << "Cannot open the web cam" << endl;
 		return -1;
 	}
 
+	namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
+
+	int iLowH = 0;
+	int iHighH = 179;
+
+	int iLowS = 0;
+	int iHighS = 255;
+
+	int iLowV = 0;
+	int iHighV = 255;
+
+	//Create trackbars in "Control" window
+	cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+	cvCreateTrackbar("HighH", "Control", &iHighH, 179);
+
+	cvCreateTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+	cvCreateTrackbar("HighS", "Control", &iHighS, 255);
+
+	cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+	cvCreateTrackbar("HighV", "Control", &iHighV, 255);
+
 	cv::Point point;
-	cv::Point prevPoint;
 	point.x = 0;
 	point.y = 0;
-	
+
+	iLowH = 75;
+	iLowS = 113;
+	iLowV = 23;
+	iHighH = 125;
+
 	while (true)
 	{
 		videoCapture >> frame;
-		pensilFrame = frame.clone();
-		wheelUpFrame = frame.clone();
-		wheelDownFrame = frame.clone();
+		frameOut = frame.clone();
 
-		skinDetector.getPensilMask(pensilFrame,wheelUpFrame,wheelDownFrame);
-		cv::imshow("pensil", pensilFrame);
-		cv::imshow("wheel down", wheelDownFrame);
-		cv::imshow("wheel up", wheelUpFrame);
+		Mat imgHSV;
 
-		if (cursorFlag)
+		//foreground = backgroundRemover.getForeground(frame);
+
+		frameOut = skinDetector.getSkinMask(frame, iLowH, iLowS, iLowV, iHighH, iHighS, iHighV);
+
+		
+		if (backgroundRemover.calibrated)
 		{
-			pensilDetector.CalculatePositionAndClicks(pensilFrame, wheelUpFrame, wheelDownFrame);
-			pensilDetector.CheckClick();
-			if (!pensilDetector.GetClickPreparation())
+			//pensilDetector.DrawPensil(frameOut);
+			pensilDetector.CalculatePositionAndClicks(frameOut);
+			cv::Point point2 = pensilDetector.GetMousePosition();
+			if (!((point.x < point2.x + cursorOffsetRange) && (point.x > point2.x - cursorOffsetRange) && (point.y < point2.y + cursorOffsetRange) && (point.y > point2.y - cursorOffsetRange)))
 			{
-				prevPoint = point;
-				point = pensilDetector.GetMousePosition();
-				if (((point.x < prevPoint.x + cursorOffsetRange) && (point.x > prevPoint.x - cursorOffsetRange) && (point.y < prevPoint.y + cursorOffsetRange) && (point.y > prevPoint.y - cursorOffsetRange)))
+				point.x = (point.x + point2.x) / 2;
+				point.y = (point.y + point2.y) / 2;
+			}
+			cv::Size size=frame.size();
+			if (cursorFlag)
+			{
+				int x;
+				int y;
+				POINT cursorPoint;
+				if (point.x < 100 || point.x>size.width-100 || point.y<100 || point.y>size.height-50)
 				{
-					cv::Size size = frame.size();
-					POINT cursorPoint;
-					if (point.x < 150 || point.x>size.width - 150 || point.y<150 || point.y>size.height - 50)
-					{
-						GetCursorPos(&cursorPoint);
-						x = cursorPoint.x;
-						y = cursorPoint.y;
-					}
-					else
-					{
-						int temp = GetSystemMetrics(SM_CXSCREEN);
-						x = temp - temp*(point.x - 150) / (size.width - 300);
-						y = GetSystemMetrics(SM_CYSCREEN)*(point.y - 150) / (size.height - 200);
-					}
-					SetCursorPos(x, y);
+					GetCursorPos(&cursorPoint);
+					x = cursorPoint.x;
+					y = cursorPoint.y;
+				}
+				else
+				{
+					int temp = GetSystemMetrics(SM_CXSCREEN);
+					x = temp*(point.x-100)/(size.width-200);
+					y = GetSystemMetrics(SM_CYSCREEN)*(point.y-100) / (size.height-150);
+				}
+				SetCursorPos(x, y);
+				if (pensilDetector.GetLeftClick())
+				{
+					//mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
+					puts("Left click");
+				}
+
+				if (pensilDetector.GetRightClick())
+				{
+					//mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0);
+					puts("Right click");
 				}
 			}
-
-			if (pensilDetector.GetLeftClick())
-			{
-				mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
-				clickFlag = true;
-				puts("Left click");
-				continue;
-			}
-			else
-			{
-				if (clickFlag)
-				{
-					mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
-				}
-				clickFlag = false;
-			}
-
-			if (pensilDetector.GetRightClick())
-			{
-				mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0);
-				mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, 0);
-				puts("Right click");
-			}
-
-			if (pensilDetector.GetWheelUp())
-			{
-				mouse_event(MOUSEEVENTF_WHEEL, 0, 0, DWORD(WHEEL_DELTA), 0);
-				puts("wheel up");
-			}
-
-			if (pensilDetector.GetWheelDown())
-			{
-				mouse_event(MOUSEEVENTF_WHEEL, 0, 0, DWORD(-WHEEL_DELTA), 0);
-				puts("wheel down");
-			}
-		}
 			
-		imshow("Original", frame);
+			
+		}
+
+		imshow("Thresholded Image", frameOut); //show the thresholded image
+		imshow("Original", frame); //show the original image
 
 		int key = waitKey(1);
-		if (key == 27)
+		if (key == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
 			cout << "esc key is pressed by user" << endl;
 			break;
 		}
+		else if (key == 98) // b
+			backgroundRemover.calibrate(frame);
 		else
-		{
 			if (key == 32)
-			{
 				if (!cursorFlag)
-				{
 					cursorFlag = true;
-				}
 				else
-				{
 					cursorFlag = false;
-				}
-			}
-		}
+
+		
 	}
 
 	return 0;
+
 }
